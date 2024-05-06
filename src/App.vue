@@ -7,8 +7,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
   let raycaster = new THREE.Raycaster();
   let isRotating = false;
   let intersect, normalize;
-  let startPoint;
-  let mouse = new THREE.Vector2();
+  let focusPoint, startPoint, endPoint;
 
   // 魔方转动的六个方向
   var xLine = new THREE.Vector3( 1, 0, 0 );     // X轴正方向
@@ -30,6 +29,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
     setupFackCube();
     setupRenderer();
     setupControls();
+    setupEvents();
   }
 
   function setupScene() {
@@ -69,14 +69,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
   function setupFackCube() {
     // 透明正方体
-    // let box = new THREE.BoxGeometry(3, 3, 3);
-    // for (var i = 0; i < box.faces.length; i++) {
-    //   box.faces[i].color.setHex(0x000000);
-    // }
-    // let mesh = new THREE.MeshBasicMaterial({vertexColors: THREE.FaceColors, opacity: 0, transparent: true});
-    // let cube = new THREE.Mesh(box, mesh);
-    // cube.cubeType = 'coverCube';
-    // scene.add(cube);
+    let box = new THREE.BoxGeometry(3, 3, 3);
+    let mesh = new THREE.MeshBasicMaterial({vertexColors: THREE.FaceColors, opacity: 0, transparent: true});
+    let cube = new THREE.Mesh(box, mesh);
+    cube.cubeType = 'coverCube';
+    scene.add(cube);
   }
 
   function setupRenderer() {
@@ -168,28 +165,42 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
   /**
    * 魔方控制方法
    */
-  function startCube(window, event) {
+  function startCube(event) {
+    console.log(event);
     getIntersects(event);
     // 魔方没有处于转动过程中且存在碰撞物体
     if (!isRotating && intersect) {
-      startPoint = intersect.point; // 开始转动，设置起始点
       controller.enabled = false;   // 当刚开始的接触点在魔方上时操作为转动魔方，屏蔽控制器转动
+      isRotating = true;
+      focusPoint = intersect.point; // 开始转动，设置起始点
+      startPoint = getWorldPosition(event);
     } else {
       controller.enabled = true;    // 当刚开始的接触点没有在魔方上或者在魔方上，但是魔方正在转动时操作转动控制器
+      isRotating = false;
+      focusPoint = null;
+      startPoint = null;
     }
   }
 
-  function moveCube(window, event) {
-
+  function moveCube(event) {
+    // console.log("event => " + event)
   }
 
-  function stopCube(window, event) {
-
+  function stopCube(event) {
+    controller.enabled = true; 
+    isRotating = false;
+    endPoint = getWorldPosition(event);
+    // TODO:
+    console.log(startPoint);
+    console.log(endPoint);
+    const vec = new THREE.Vector2(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+    print("HHHH: vec => " + vec);
   }
 
   // 获取操作焦点以及该焦点所在平面的法向量
   function getIntersects(event) {
     // 触摸事件和鼠标事件获得坐标的方式有点区别
+    let mouse = new THREE.Vector2();
     if (event.touches) {
       var touch = event.touches[0];
       mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
@@ -217,8 +228,21 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
     }
   }
 
+  // 获取世界坐标
+  function getWorldPosition(event) {
+    let x = (event.clientX / window.innerWidth) * 2 - 1;
+    let y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    let vector = new THREE.Vector3(x, y, 0.5); // 假设在一定深度创建，确保在摄像机前方
+    vector.unproject(camera);
+    let dir = vector.sub(camera.position).normalize();
+    let distance = -camera.position.z / dir.z; // 根据需要调整，确保物体在摄像机前方可见
+    let pos = camera.position.clone().add(dir.multiplyScalar(distance));
+    return pos;
+  }
+
   // 获得旋转方向
-  function getDirection(vector3){
+  function getDirection(vector3) {
     var direction;
     // 判断差向量和x、y、z轴的夹角
     var xAngle = vector3.angleTo(xLine);
@@ -232,34 +256,74 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
       case xAngle:
         direction = 0;  // 向x轴正方向旋转90度（还要区分是绕z轴还是绕y轴）
         if (normalize.equals(yLine)) {
-          direction = direction + 0.1;  // 绕z轴顺时针
+          direction = direction + 1;  // 绕z轴顺时针
         } else if (normalize.equals(yLineAd)) {
-          direction = direction + 0.2;  // 绕z轴逆时针
+          direction = direction + 2;  // 绕z轴逆时针
         } else if (normalize.equals(zLine)) {
-          direction = direction + 0.3;  // 绕y轴逆时针
+          direction = direction + 4;  // 绕y轴逆时针
         } else {
-          direction = direction + 0.4;  // 绕y轴顺时针
+          direction = direction + 3;  // 绕y轴顺时针
         }
         break;
       case xAngleAd:
-        direction = 1;  // 向x轴反方向旋转90度
-        //...
+        direction = 10;  // 向x轴反方向旋转90度
+        if (normalize.equals(yLine)) {
+          direction = direction + 2;  // 绕z轴逆时针
+        } else if (normalize.equals(yLineAd)) {
+          direction = direction + 1;  // 绕z轴顺时针
+        } else if (normalize.equals(zLine)) {
+          direction = direction + 3;  // 绕y轴顺时针
+        } else {
+          direction = direction + 4;  // 绕y轴逆时针
+        } 
         break;
       case yAngle:
-        direction = 2;  // 向y轴正方向旋转90度
-        //...
+        direction = 20;  // 向y轴正方向旋转90度
+        if (normalize.equals(xLine)) {
+          direction = direction + 1;  // 绕z轴逆时针
+        } else if (normalize.equals(xLineAd)) {
+          direction = direction + 2;  // 绕z轴逆时针
+        } else if (normalize.equals(zLine)) {
+          direction = direction + 5;  // 绕x轴顺时针
+        } else {
+          direction = direction + 6;  // 绕x轴逆时针
+        } 
         break;
       case yAngleAd:
-        direction = 3;  // 向y轴反方向旋转90度
-        //...
+        direction = 30;  // 向y轴反方向旋转90度
+        if (normalize.equals(xLine)) {
+          direction = direction + 2;  // 绕z轴逆时针
+        } else if (normalize.equals(xLineAd)) {
+          direction = direction + 1;  // 绕z轴逆时针
+        } else if (normalize.equals(zLine)) {
+          direction = direction + 6;  // 绕x轴逆时针
+        } else {
+          direction = direction + 5;  // 绕x轴顺时针
+        } 
         break;
       case zAngle:
-        direction = 4;  // 向z轴正方向旋转90度
-        //...
+        direction = 40;  // 向z轴正方向旋转90度
+        if (normalize.equals(xLine)) {
+          direction = direction + 3;  // 绕y轴顺时针
+        } else if (normalize.equals(xLineAd)) {
+          direction = direction + 4;  // 绕y轴逆时针
+        } else if (normalize.equals(zLine)) {
+          direction = direction + 6;  // 绕x轴逆时针
+        } else {
+          direction = direction + 5;  // 绕x轴顺时针
+        } 
         break;
       case zAngleAd:
-        direction = 5;  // 向z轴反方向旋转90度
-        //...
+        direction = 50;  // 向z轴反方向旋转90度
+        if (normalize.equals(xLine)) {
+          direction = direction + 4;  // 绕y轴逆时针
+        } else if (normalize.equals(xLineAd)) {
+          direction = direction + 3;  // 绕y轴顺时针
+        } else if (normalize.equals(zLine)) {
+          direction = direction + 5;  // 绕x轴顺时针
+        } else {
+          direction = direction + 6;  // 绕x轴逆时针
+        } 
         break;
       default:
         break;
