@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
   let scene, camera, renderer, controller;
   let cubes;
+  let origin;
   let raycaster = new THREE.Raycaster();
   let isRotating = false;
   let intersect, normalize;
@@ -106,6 +107,15 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
   }
 
   /**
+   * 设置各个立方体的位置索引
+   */
+  function updateCubeIndex() {
+    for (let i = 0; i < cubes.lenght; i++) {
+      var 
+    }
+  }
+
+  /**
    * x, y, z: 魔方中心坐标
    * num: 魔方阶数
    * len: 小方块的宽高
@@ -138,6 +148,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
         mesh.position.y = (leftUpY - len / 2) - parseInt(j / num) * len;
         mesh.position.z = (leftUpZ - len / 2) - i * len;
         cubes.push(mesh);
+        let index = i * num + j;
+
       }
     }
     return cubes;
@@ -166,35 +178,56 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
    * 魔方控制方法
    */
   function startCube(event) {
+    console.log("startCube");
     console.log(event);
     getIntersects(event);
     // 魔方没有处于转动过程中且存在碰撞物体
     if (!isRotating && intersect) {
       controller.enabled = false;   // 当刚开始的接触点在魔方上时操作为转动魔方，屏蔽控制器转动
-      isRotating = true;
-      focusPoint = intersect.point; // 开始转动，设置起始点
-      startPoint = getWorldPosition(event);
+      startPoint = intersect.point; // 开始转动，设置起始点
     } else {
       controller.enabled = true;    // 当刚开始的接触点没有在魔方上或者在魔方上，但是魔方正在转动时操作转动控制器
-      isRotating = false;
-      focusPoint = null;
-      startPoint = null;
     }
   }
 
   function moveCube(event) {
     // console.log("event => " + event)
+    getIntersects(event);
+    if (intersect) {
+      if (!isRotating && startPoint) {
+        endPoint = intersect.point;
+        if (!endPoint.equals(startPoint)) {
+          isRotating = true;
+          let vector = endPoint.sub(startPoint);
+          let direction = getDirection(vector);
+          let domElement
+        }
+      }
+    }
   }
 
   function stopCube(event) {
+    console.log("endCube");
+    console.log(event);
+    endPoint = getWorldPosition(event);
+    console.log("endPoint");
+    console.log(endPoint);
+    // const vec = new THREE.Vector2(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+    // print("HHHH: vec => " + vec);
+    if (isRotating) {
+      // 获取方向并旋转魔方
+      const vector3 = new THREE.Vector3(endPoint.x - startPoint.x, endPoint.y - startPoint.y, endPoint.z - startPoint.z);
+      console.log("vector3: ");
+      console.log(vector3);
+      let direction = getDirection(vector3);
+      console.log("direction: " + direction); 
+    }
+
+    intersect = null;
+    startPoint = null;
+
     controller.enabled = true; 
     isRotating = false;
-    endPoint = getWorldPosition(event);
-    // TODO:
-    console.log(startPoint);
-    console.log(endPoint);
-    const vec = new THREE.Vector2(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
-    print("HHHH: vec => " + vec);
   }
 
   // 获取操作焦点以及该焦点所在平面的法向量
@@ -241,17 +274,36 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
     return pos;
   }
 
-  // 获得旋转方向
+  /**
+   * 获取同一平面上的立方体
+   */
+  function getPlaneCubes(target, direction) {
+
+  }
+  // 
+  /**
+   * 获得旋转方向
+   * vector3: 鼠标滑动的方向
+   */
   function getDirection(vector3) {
     var direction;
-    // 判断差向量和x、y、z轴的夹角
+    // 判断差向量和 x、y、z 轴的夹角
     var xAngle = vector3.angleTo(xLine);
     var xAngleAd = vector3.angleTo(xLineAd);
     var yAngle = vector3.angleTo(yLine);
     var yAngleAd = vector3.angleTo(yLineAd);
     var zAngle = vector3.angleTo(zLine);
     var zAngleAd = vector3.angleTo(zLineAd);
-    var minAngle = min([xAngle, xAngleAd, yAngle, yAngleAd, zAngle, zAngleAd]);  // 最小夹角
+    var minAngle = Math.min(...[xAngle, xAngleAd, yAngle, yAngleAd, zAngle, zAngleAd]);  // 最小夹角
+    console.log(xAngle);
+    console.log(xAngleAd);
+    console.log(yAngle);
+    console.log(yAngleAd);
+    console.log(zAngle);
+    console.log(zAngleAd);
+    console.log("minAngle: " + minAngle);
+    console.log("normalize");
+    console.log(normalize);
     switch(minAngle){
       case xAngle:
         direction = 0;  // 向x轴正方向旋转90度（还要区分是绕z轴还是绕y轴）
@@ -261,7 +313,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
           direction = direction + 2;  // 绕z轴逆时针
         } else if (normalize.equals(zLine)) {
           direction = direction + 4;  // 绕y轴逆时针
-        } else {
+        } else if (normalize.equals(zLineAd)) {
           direction = direction + 3;  // 绕y轴顺时针
         }
         break;
@@ -273,62 +325,77 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
           direction = direction + 1;  // 绕z轴顺时针
         } else if (normalize.equals(zLine)) {
           direction = direction + 3;  // 绕y轴顺时针
-        } else {
+        } else if (normalize.equals(zLineAd)) {
           direction = direction + 4;  // 绕y轴逆时针
-        } 
+        }
         break;
       case yAngle:
         direction = 20;  // 向y轴正方向旋转90度
-        if (normalize.equals(xLine)) {
-          direction = direction + 1;  // 绕z轴逆时针
-        } else if (normalize.equals(xLineAd)) {
-          direction = direction + 2;  // 绕z轴逆时针
-        } else if (normalize.equals(zLine)) {
-          direction = direction + 5;  // 绕x轴顺时针
+        console.log(xLine);
+        console.log(xLineAd);
+        console.log(zLine);
+        if (normalize.equals(zLine)) {
+          direction = direction + 2;  // 绕x轴逆时针
+        } else if (normalize.equals(zLineAd)) {
+          direction = direction + 1;  // 绕x轴顺时针
+        } else if (normalize.equals(xLine)) {
+          direction = direction + 6;  // 绕z轴逆时针
         } else {
-          direction = direction + 6;  // 绕x轴逆时针
-        } 
+          direction = direction + 5;  // 绕z轴顺时针
+        }
         break;
       case yAngleAd:
         direction = 30;  // 向y轴反方向旋转90度
-        if (normalize.equals(xLine)) {
-          direction = direction + 2;  // 绕z轴逆时针
-        } else if (normalize.equals(xLineAd)) {
-          direction = direction + 1;  // 绕z轴逆时针
-        } else if (normalize.equals(zLine)) {
-          direction = direction + 6;  // 绕x轴逆时针
+        if (normalize.equals(zLine)) {
+          direction = direction + 1;  // 绕x轴顺时针
+        } else if (normalize.equals(zLineAd)) {
+          direction = direction + 2;  // 绕x轴逆时针
+        } else if (normalize.equals(xLine)) {
+          direction = direction + 5;  // 绕z轴顺时针
         } else {
-          direction = direction + 5;  // 绕x轴顺时针
-        } 
+          direction = direction + 6;  // 绕z轴逆时针
+        }
         break;
       case zAngle:
         direction = 40;  // 向z轴正方向旋转90度
-        if (normalize.equals(xLine)) {
+        if (normalize.equals(yLine)) {
+          direction = direction + 1;  // 绕x轴顺时针
+        } else if (normalize.equals(yLineAd)) {
+          direction = direction + 2;  // 绕x轴逆时针
+        } else if (normalize.equals(xLine)) {
           direction = direction + 3;  // 绕y轴顺时针
         } else if (normalize.equals(xLineAd)) {
           direction = direction + 4;  // 绕y轴逆时针
-        } else if (normalize.equals(zLine)) {
-          direction = direction + 6;  // 绕x轴逆时针
-        } else {
-          direction = direction + 5;  // 绕x轴顺时针
-        } 
+        }
         break;
       case zAngleAd:
         direction = 50;  // 向z轴反方向旋转90度
-        if (normalize.equals(xLine)) {
+        if (normalize.equals(yLine)) {
+          direction = direction + 2;  // 绕x轴逆时针
+        } else if (normalize.equals(yLineAd)) {
+          direction = direction + 1;  // 绕x轴顺时针
+        } else if (normalize.equals(xLine)) {
           direction = direction + 4;  // 绕y轴逆时针
         } else if (normalize.equals(xLineAd)) {
           direction = direction + 3;  // 绕y轴顺时针
-        } else if (normalize.equals(zLine)) {
-          direction = direction + 5;  // 绕x轴顺时针
-        } else {
-          direction = direction + 6;  // 绕x轴逆时针
-        } 
+        }
         break;
       default:
         break;
     }
     return direction;
+  }
+
+  function rotateAroundX() {
+
+  }
+
+  function rotateAroundY() {
+
+  }
+
+  function rotateAroundZ() {
+
   }
 </script>
 
