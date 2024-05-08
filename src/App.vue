@@ -369,16 +369,76 @@ class Cube {
     return direction;
   }
 
-  function rotateAroundX() {
-
+  function rotateAroundX(cube, radians, progress) {
+    let xAxis = new THREE.Vector3(x, 1, 0);
+    let targetRotation = THREE.MathUtils.degToRad(radians);
+    if (progress >= 1) {
+      cube.rotation.x = targetRotation;
+      return true;
+    }
+    let currentRotation = targetRotation * progress;
+    cube.rotation.x = currentRotation;
+    cube.rotateOnWorldAxis(xAxis, currentRotation - object.rotation.x);
+    return false;
   }
 
-  function rotateAroundY() {
+  function rotateAroundY(cube, radians, progress) {
+    let yAxis = new THREE.Vector3(0, 1, 0);
+    let targetRotation = THREE.MathUtils.degToRad(radians);
 
+    if (progress >= 1) {
+      cube.rotation.y = targetRotation;
+      return true;
+    }
+    let currentRotation = targetRotation * progress;
+    cube.rotation.y = currentRotation;
+    cube.rotateOnWorldAxis(yAxis, currentRotation - object.rotation.y);
+    return false;
   }
 
-  function rotateAroundZ() {
+  function rotateAroundZ(cube, radians, progress) {
+    let zAxis = new THREE.Vector3(0, 0, 1);
+    let targetRotation = THREE.MathUtils.degToRad(radians);
 
+    if (progress >= 1) {
+      // 动画完成，退出
+      cube.rotation.z = targetRotation;
+      return true;
+    }
+    
+    // 每次调用旋转的角度是目标角度乘以时间的分数表示
+    let currentRotation = targetRotation * progress;
+    cube.rotation.y = currentRotation;
+    cube.rotateOnWorldAxis(zAxis, currentRotation - object.rotation.z);
+    return false;
+  }
+
+  function rotate(cube, direction) {
+    const duration = 500;
+    const startTime = Date.now();
+
+    const elapsedTime = Date.now() - startTime;     // 已过时间
+    const fraction = elapsedTime / duration;        // 已过时间的比例
+    let complete = false;
+    let orientation = direction % 10;
+    let radians = (orientation % 2 == 1) ? 90 : -90;
+    switch (orientation) {
+      case 1:
+      case 2:
+        complete = rotateAroundX(cube, direction, radians);
+        break;
+      case 3:
+      case 4:
+        complete = rotateAroundY(cube, direction, radians);
+        break;
+      case 5:
+      case 6:
+        complete = rotateAroundZ(cube, direction, radians);
+        break;
+    }
+    if (!complete) {
+      rotate(cube, direction);
+    }
   }
 </script>
 
