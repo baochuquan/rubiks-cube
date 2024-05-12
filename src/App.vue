@@ -15,7 +15,6 @@ class Cube {
   let origin;             // 原始的索引
   let staticState;        // 静态的索引。即使索引和位置相对于世界坐标不变。
 
-  let raycaster = new THREE.Raycaster();
   let isRotating = false; // 是否在旋转
   let startCube;          // 焦点立方体 
   let normalize;          // 焦点立方体表面的法线
@@ -186,11 +185,11 @@ class Cube {
   function startMouse(event) {
     // 找到
     const value = getIntersectAndNormalize(event);
+    normalize = value.normalize; 
     // 魔方没有处于转动过程中且存在碰撞物体
     if (!isRotating && value.intersect) {
       controller.enabled = false;   // 当刚开始的接触点在魔方上时操作为转动魔方，屏蔽控制器转动
       startCube = value.intersect.object;
-      normalize = value.normalize;  
       startPoint = value.intersect.point; // 开始转动，设置起始点
     } else {
       controller.enabled = true;    // 当刚开始的接触点没有在魔方上或者在魔方上，但是魔方正在转动时操作转动控制器
@@ -205,22 +204,15 @@ class Cube {
         isRotating = true;
         let vector = movePoint.sub(startPoint);
         let direction = getDirection(vector);
-        console.log("moveMouse");
-        console.log(startCube.position);
-        console.log("getPlane");
         let cubes = getPlaneCubes(startCube, direction);
-        // animation
-        
-        // TODO: DEBUG
-        console.log(direction);
+        console.log("direction: " + direction);
         for (let i = 0; i < cubes.length; i++) {
-          console.log(cubes[i].position);
+          console.log(cubes[i]);
         }
-        console.log("moveMouse ...") 
-        const startTime = Date.now();
-        requestAnimationFrame((timestamp) => {
-          rotateAnimation(cubes, direction, startTime);
-        });
+        // const startTime = Date.now();
+        // requestAnimationFrame((timestamp) => {
+        //   rotateAnimation(cubes, direction, startTime);
+        // });
       }
     };
   }
@@ -233,18 +225,22 @@ class Cube {
     controller.enabled = true;
   }
 
-  // 获取操作焦点以及该焦点所在平面的法向量
+  /**
+   * 获取操作焦点以及该焦点所在平面的法向量 
+   * */ 
   function getIntersectAndNormalize(event) {
-    // 触摸事件和鼠标事件获得坐标的方式有点区别
     let mouse = new THREE.Vector2();
     if (event.touches) {
+      // 触摸事件
       var touch = event.touches[0];
       mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
     } else {
+      // 鼠标事件
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     }
+    const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
     // Raycaster方式定位选取元素，可能会选取多个，以第一个为准
     var intersects = raycaster.intersectObjects(scene.children);
@@ -336,6 +332,8 @@ class Cube {
     var zAngle = vector3.angleTo(zLine);
     var zAngleAd = vector3.angleTo(zLineAd);
     var minAngle = Math.min(...[xAngle, xAngleAd, yAngle, yAngleAd, zAngle, zAngleAd]);  // 最小夹角
+    console.log("vector: ");
+    console.log(vector3);
     switch(minAngle){
       case xAngle:
         direction = 0;  // 向x轴正方向旋转90度（还要区分是绕z轴还是绕y轴）
@@ -465,6 +463,9 @@ class Cube {
     const elapsedTime = Date.now() - startTime;     // 已过时间
     const progress = elapsedTime / duration;        // 已过时间的比例
     let complete = false;
+    if (progress > 1) {
+      return;
+    }
     let orientation = direction % 10;
     let radians = (orientation % 2 == 1) ? 90 : -90;
     console.log("rotateAnimation");
@@ -480,9 +481,6 @@ class Cube {
       case 3:
       case 4:
         for (let i = 0; i < cubes.length; i++) {
-          console.log(cubes[i].position);
-          console.log(radians);
-          console.log(progress);
           const result = rotateAroundY(cubes[i], radians, progress);
           complete = complete && result;
         }
@@ -495,11 +493,9 @@ class Cube {
         }
         break;
     }
-    if (!complete) {
-      requestAnimationFrame((time) => {
-        rotateAnimation(cubes, direction, startTime);
-      })
-    }
+    requestAnimationFrame((time) => {
+      rotateAnimation(cubes, direction, startTime);
+    });
   }
 </script>
 
