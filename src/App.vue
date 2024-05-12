@@ -148,10 +148,10 @@ class Cube {
     const textures = [
       loader.load("./img/blue.png"),
       loader.load("./img/green.png"),
-      loader.load("./img/orange.png"),
-      loader.load("./img/red.png"),
       loader.load("./img/white.png"),
       loader.load("./img/yellow.png"),
+      loader.load("./img/orange.png"),
+      loader.load("./img/red.png"),
     ];
     const materials = textures.map(texture => new THREE.MeshBasicMaterial({ map: texture }));
     // 生成小方块
