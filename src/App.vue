@@ -148,8 +148,8 @@ class Cube {
     const textures = [
       loader.load("./img/blue.png"),
       loader.load("./img/green.png"),
-      loader.load("./img/white.png"),
       loader.load("./img/yellow.png"),
+      loader.load("./img/white.png"),
       loader.load("./img/orange.png"),
       loader.load("./img/red.png"),
     ];
