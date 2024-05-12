@@ -28,13 +28,17 @@ class Cube {
   var zLine = new THREE.Vector3( 0, 0, 1 );     // Z轴正方向
   var zLineAd = new THREE.Vector3( 0, 0, -1 );  // Z轴负方向
 
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const rotateDuration = 500; // 转动的总运动时间
+
   setup();
   animate();
 
   function setup() {
     setupScene();
     setupCamera();
-    setupAxesHelper();
+    // setupAxesHelper();
     setupLights();
     setupRubiks();
     setupCubes();
@@ -75,6 +79,7 @@ class Cube {
     let box = new THREE.BoxGeometry(3, 3, 3);
     let mesh = new THREE.MeshBasicMaterial({vertexColors: THREE.FaceColors, opacity: 0, transparent: true});
     rubiks = new THREE.Mesh(box, mesh);
+    // rubiks = new THREE.Mesh(box, materials);
     rubiks.cubeType = 'coverCube';
     scene.add(rubiks);
   }
@@ -151,7 +156,6 @@ class Cube {
     const materials = textures.map(texture => new THREE.MeshBasicMaterial({ map: texture }));
     // 生成小方块
     var cubes = [];
-    console.log("create cubes");
     for (var i = 0; i < num; i++) {
       for (var j = 0; j < num * num; j++) {
         var box = new THREE.BoxGeometry(len, len, len);
@@ -160,11 +164,10 @@ class Cube {
         mesh.position.x = (leftUpX + len / 2) + (j % num) * len;
         mesh.position.y = (leftUpY - len / 2) - parseInt(j / num) * len;
         mesh.position.z = (leftUpZ - len / 2) - i * len;
-        console.log(mesh.position);
+        mesh.tag = i * 9 + j;
         cubes.push(mesh);
       }
     }
-    console.log("finish cubes");
     return cubes;
   }
 
@@ -205,14 +208,10 @@ class Cube {
         let vector = movePoint.sub(startPoint);
         let direction = getDirection(vector);
         let cubes = getPlaneCubes(startCube, direction);
-        console.log("direction: " + direction);
-        for (let i = 0; i < cubes.length; i++) {
-          console.log(cubes[i]);
-        }
-        // const startTime = Date.now();
-        // requestAnimationFrame((timestamp) => {
-        //   rotateAnimation(cubes, direction, startTime);
-        // });
+        const startstamp = Date.now();
+        requestAnimationFrame((timestamp) => {
+          rotateAnimation(cubes, direction, timestamp, 0);
+        });
       }
     };
   }
@@ -239,7 +238,8 @@ class Cube {
       // 鼠标事件
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    }
+    } 
+
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
     // Raycaster方式定位选取元素，可能会选取多个，以第一个为准
@@ -282,14 +282,14 @@ class Cube {
     let results = [];
     let orientation = direction % 10;
     let radians = (orientation % 2 == 1) ? 90 : -90;
-    console.log("orientation => " + orientation);
     switch (orientation) {
       case 1:
       case 2:
         // 绕x轴
         for (let i = 0; i < cubes.length; i++) {
           let curr = cubes[i];
-          if (curr.position.x == cube.position.x) {
+          console.log(curr.position);
+          if (Math.abs(curr.position.x - cube.position.x) < 0.2) {
             results.push(curr);
           }
         }
@@ -299,7 +299,8 @@ class Cube {
         // 绕y轴
         for (let i = 0; i < cubes.length; i++) {
           let curr = cubes[i];
-          if (curr.position.y == cube.position.y) {
+          console.log(curr.position);
+          if (Math.abs(curr.position.y - cube.position.y) < 0.2) {
             results.push(curr);
           }
         }
@@ -309,7 +310,8 @@ class Cube {
         // 绕z轴
         for (let i = 0; i < cubes.length; i++) {
           let curr = cubes[i];
-          if (curr.position.z == cube.position.z) {
+          console.log(curr.position);
+          if (Math.abs(curr.position.z - cube.position.z) < 0.2) {
             results.push(curr);
           }
         }
@@ -332,11 +334,9 @@ class Cube {
     var zAngle = vector3.angleTo(zLine);
     var zAngleAd = vector3.angleTo(zLineAd);
     var minAngle = Math.min(...[xAngle, xAngleAd, yAngle, yAngleAd, zAngle, zAngleAd]);  // 最小夹角
-    console.log("vector: ");
-    console.log(vector3);
     switch(minAngle){
       case xAngle:
-        direction = 0;  // 向x轴正方向旋转90度（还要区分是绕z轴还是绕y轴）
+        direction = 10;  // 向x轴正方向旋转90度（还要区分是绕z轴还是绕y轴）
         if (normalize.equals(yLine)) {
           direction = direction + 5;  // 绕z轴顺时针
         } else if (normalize.equals(yLineAd)) {
@@ -348,7 +348,7 @@ class Cube {
         }
         break;
       case xAngleAd:
-        direction = 10;  // 向x轴反方向旋转90度
+        direction = 20;  // 向x轴反方向旋转90度
         if (normalize.equals(yLine)) {
           direction = direction + 6;  // 绕z轴逆时针
         } else if (normalize.equals(yLineAd)) {
@@ -360,11 +360,11 @@ class Cube {
         }
         break;
       case yAngle:
-        direction = 20;  // 向y轴正方向旋转90度
+        direction = 30;  // 向y轴正方向旋转90度
         if (normalize.equals(zLine)) {
-          direction = direction + 2;  // 绕x轴逆时针
-        } else if (normalize.equals(zLineAd)) {
           direction = direction + 1;  // 绕x轴顺时针
+        } else if (normalize.equals(zLineAd)) {
+          direction = direction + 2;  // 绕x轴逆时针
         } else if (normalize.equals(xLine)) {
           direction = direction + 6;  // 绕z轴逆时针
         } else {
@@ -372,11 +372,11 @@ class Cube {
         }
         break;
       case yAngleAd:
-        direction = 30;  // 向y轴反方向旋转90度
+        direction = 40;  // 向y轴反方向旋转90度
         if (normalize.equals(zLine)) {
-          direction = direction + 1;  // 绕x轴顺时针
-        } else if (normalize.equals(zLineAd)) {
           direction = direction + 2;  // 绕x轴逆时针
+        } else if (normalize.equals(zLineAd)) {
+          direction = direction + 1;  // 绕x轴顺时针
         } else if (normalize.equals(xLine)) {
           direction = direction + 5;  // 绕z轴顺时针
         } else {
@@ -384,11 +384,11 @@ class Cube {
         }
         break;
       case zAngle:
-        direction = 40;  // 向z轴正方向旋转90度
+        direction = 50;  // 向z轴正方向旋转90度
         if (normalize.equals(yLine)) {
-          direction = direction + 1;  // 绕x轴顺时针
-        } else if (normalize.equals(yLineAd)) {
           direction = direction + 2;  // 绕x轴逆时针
+        } else if (normalize.equals(yLineAd)) {
+          direction = direction + 1;  // 绕x轴顺时针
         } else if (normalize.equals(xLine)) {
           direction = direction + 3;  // 绕y轴顺时针
         } else if (normalize.equals(xLineAd)) {
@@ -396,11 +396,11 @@ class Cube {
         }
         break;
       case zAngleAd:
-        direction = 50;  // 向z轴反方向旋转90度
+        direction = 60;  // 向z轴反方向旋转90度
         if (normalize.equals(yLine)) {
-          direction = direction + 2;  // 绕x轴逆时针
-        } else if (normalize.equals(yLineAd)) {
           direction = direction + 1;  // 绕x轴顺时针
+        } else if (normalize.equals(yLineAd)) {
+          direction = direction + 2;  // 绕x轴逆时针
         } else if (normalize.equals(xLine)) {
           direction = direction + 4;  // 绕y轴逆时针
         } else if (normalize.equals(xLineAd)) {
@@ -413,90 +413,76 @@ class Cube {
     return direction;
   }
 
-  function rotateAroundX(cube, radians, progress) {
-    let xAxis = new THREE.Vector3(x, 1, 0);
-    let targetRotation = THREE.MathUtils.degToRad(radians);
-    if (progress >= 1) {
-      cube.rotation.x = targetRotation;
-      return true;
+  function rotateAnimation(cubes, direction, currentstamp, startstamp, laststamp) {
+    if(startstamp === 0){
+        startstamp = currentstamp;
+        laststamp = currentstamp;
     }
-    let currentRotation = targetRotation * progress;
-    cube.rotation.x = currentRotation;
-    cube.rotateOnWorldAxis(xAxis, currentRotation - cube.rotation.x);
-    return false;
-  }
-
-  function rotateAroundY(cube, radians, progress) {
-    let yAxis = new THREE.Vector3(0, 1, 0);
-    let targetRotation = THREE.MathUtils.degToRad(radians);
-
-    if (progress >= 1) {
-      cube.rotation.y = targetRotation;
-      return true;
-    }
-    let currentRotation = targetRotation * progress;
-    cube.rotation.y = currentRotation;
-    cube.rotateOnWorldAxis(yAxis, currentRotation - cube.rotation.y);
-    return false;
-  }
-
-  function rotateAroundZ(cube, radians, progress) {
-    let zAxis = new THREE.Vector3(0, 0, 1);
-    let targetRotation = THREE.MathUtils.degToRad(radians);
-
-    if (progress >= 1) {
-      // 动画完成，退出
-      cube.rotation.z = targetRotation;
-      return true;
-    }
-    
-    // 每次调用旋转的角度是目标角度乘以时间的分数表示
-    let currentRotation = targetRotation * progress;
-    cube.rotation.y = currentRotation;
-    cube.rotateOnWorldAxis(zAxis, currentRotation - cube.rotation.y);
-    return false;
-  }
-
-  function rotateAnimation(cubes, direction, startTime) {
-    const duration = 500;
-
-    const elapsedTime = Date.now() - startTime;     // 已过时间
-    const progress = elapsedTime / duration;        // 已过时间的比例
-    let complete = false;
-    if (progress > 1) {
-      return;
+    if(currentstamp - startstamp >= rotateDuration){
+      currentstamp = startstamp + rotateDuration;
+      isRotating = false;
+      startPoint = null;
     }
     let orientation = direction % 10;
-    let radians = (orientation % 2 == 1) ? 90 : -90;
-    console.log("rotateAnimation");
-    console.log("orientation -> " + orientation);
+    let radians = (orientation % 2 == 1) ? -90 : 90;
     switch (orientation) {
       case 1:
       case 2:
         for (let i = 0; i < cubes.length; i++) {
-          const result = rotateAroundX(cubes[i], radians, progress);
-          complete = complete && result;
+          rotateAroundWorldX(cubes[i], radians * Math.PI / 180 * (currentstamp - laststamp) / rotateDuration);
         }
         break;
       case 3:
       case 4:
         for (let i = 0; i < cubes.length; i++) {
-          const result = rotateAroundY(cubes[i], radians, progress);
-          complete = complete && result;
+          rotateAroundWorldY(cubes[i], radians * Math.PI / 180 * (currentstamp - laststamp) / rotateDuration);
         }
         break;
       case 5:
       case 6:
         for (let i = 0; i < cubes.length; i++) {
-          const result = rotateAroundZ(cubes[i], radians, progress);
-          complete = complete && result;
+          rotateAroundWorldZ(cubes[i], radians * Math.PI / 180 * (currentstamp - laststamp) / rotateDuration);
         }
         break;
     }
-    requestAnimationFrame((time) => {
-      rotateAnimation(cubes, direction, startTime);
-    });
+    if(currentstamp - startstamp < rotateDuration){
+      requestAnimationFrame((timestamp) => {
+        rotateAnimation(cubes, direction, timestamp, startstamp, currentstamp);
+      });
+    }
   }
+
+  function rotateAroundWorldX(cube, rad){
+    var y0 = cube.position.y;
+    var z0 = cube.position.z;
+    var q = new THREE.Quaternion(); 
+    q.setFromAxisAngle(new THREE.Vector3( 1, 0, 0 ), rad);
+    cube.quaternion.premultiply(q);
+    cube.position.y = Math.cos(rad) * y0 - Math.sin(rad) * z0;
+    cube.position.z = Math.cos(rad) * z0 + Math.sin(rad) * y0;
+  }
+
+  function rotateAroundWorldY(cube, rad){
+    var x0 = cube.position.x;
+    var z0 = cube.position.z;
+    var q = new THREE.Quaternion(); 
+    q.setFromAxisAngle(new THREE.Vector3( 0, 1, 0 ), rad);
+    cube.quaternion.premultiply( q );
+    cube.position.x = Math.cos(rad) * x0 + Math.sin(rad) * z0;
+    cube.position.z = Math.cos(rad) * z0 - Math.sin(rad) * x0;
+  }
+
+  function rotateAroundWorldZ(cube, rad){
+    var x0 = cube.position.x;
+    var y0 = cube.position.y;
+    var q = new THREE.Quaternion(); 
+    q.setFromAxisAngle(new THREE.Vector3( 0, 0, 1 ), rad);
+    cube.quaternion.premultiply( q );
+    cube.position.x = Math.cos(rad) * x0 - Math.sin(rad) * y0;
+    cube.position.y = Math.cos(rad) * y0 + Math.sin(rad) * x0;
+  }
+
+  
 </script>
 
 
