@@ -1,10 +1,14 @@
 <script setup>
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import ForkMeOnGitHub from './components/ForkMeOnGitHub.vue';
+import { vec2 } from 'three/examples/jsm/nodes/Nodes.js';
 
-class Cube {
-  constructor(position, index) {
-    this.position = position
+class CubePosition {
+  constructor(x, y, z, index) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
     this.index = index
   }
 }
@@ -31,6 +35,7 @@ class Cube {
   const width = window.innerWidth;
   const height = window.innerHeight;
   const rotateDuration = 500; // 转动的总运动时间
+  const cubeLength = 1;
 
   setup();
   animate();
@@ -59,7 +64,7 @@ class Cube {
       0.1, 
       1000
     );
-    camera.position.set(10, 12, 10);
+    camera.position.set(6, 8, 6);
     camera.lookAt(0, 3, 0);
     camera.updateProjectionMatrix();
   }
@@ -122,17 +127,6 @@ class Cube {
   }
 
   /**
-   * 设置各个立方体的位置索引
-   */
-  function updateCubeIndex() {
-    // 遍历所有立方体
-    for (let i = 0; i < cubes.lenght; i++) {
-      let cube = cubes[i];
-      
-    }
-  }
-
-  /**
    * x, y, z: 魔方中心坐标
    * num: 魔方阶数
    * len: 小方块的宽高
@@ -161,10 +155,16 @@ class Cube {
         var box = new THREE.BoxGeometry(len, len, len);
         var mesh = new THREE.Mesh(box, materials);
         // 依次计算各个小方块中心点坐标
-        mesh.position.x = (leftUpX + len / 2) + (j % num) * len;
-        mesh.position.y = (leftUpY - len / 2) - parseInt(j / num) * len;
-        mesh.position.z = (leftUpZ - len / 2) - i * len;
-        mesh.tag = i * 9 + j;
+        const x = (leftUpX + len / 2) + (j % num) * len;
+        const y = (leftUpY - len / 2) - parseInt(j / num) * len;
+        const z = (leftUpZ - len / 2) - i * len; 
+        const index = i * 9 + j;
+        const position = new CubePosition(x, y, z, index);
+        mesh.position.x = x;
+        mesh.position.y = y;
+        mesh.position.z = z;
+        mesh.index = index;
+        mesh.initPosition = position;
         cubes.push(mesh);
       }
     }
@@ -277,6 +277,8 @@ class Cube {
 
   /**
    * 根据立方体和旋转方向，找到同一平面上的所有立方体
+   * @param cube 焦点立方体
+   * @param direction 旋转轴
    */
   function getPlaneCubes(cube, direction) {
     let results = [];
@@ -416,12 +418,12 @@ class Cube {
   function rotateAnimation(cubes, direction, currentstamp, startstamp, laststamp) {
     if(startstamp === 0){
         startstamp = currentstamp;
-        laststamp = currentstamp;
+        laststamp = currentstamp;   
     }
+    let isLastRotate = false;    // 是否是最后一次微旋转
     if(currentstamp - startstamp >= rotateDuration){
       currentstamp = startstamp + rotateDuration;
-      isRotating = false;
-      startPoint = null;
+      isLastRotate = true;
     }
     let orientation = direction % 10;
     let radians = (orientation % 2 == 1) ? -90 : 90;
@@ -445,10 +447,16 @@ class Cube {
         }
         break;
     }
-    if(currentstamp - startstamp < rotateDuration){
+    if(!isLastRotate){
       requestAnimationFrame((timestamp) => {
         rotateAnimation(cubes, direction, timestamp, startstamp, currentstamp);
       });
+    } else {
+      isRotating = false;
+      startPoint = null;
+      // 旋转完成后更新索引
+      updateCubeIndex();
+      const cube = getCubeByIndex(0);
     }
   }
 
@@ -482,12 +490,133 @@ class Cube {
     cube.position.y = Math.cos(rad) * y0 + Math.sin(rad) * x0;
   }
 
+  /**
+   * 更新立方体索引
+   */
+  function updateCubeIndex() {
+    for (let i = 0; i < cubes.length; i++) {
+      const cube = cubes[i];
+      for (let j = 0; j < cubes.length; j++) {
+        const temp = cubes[j];
+        if (Math.abs(cube.position.x - temp.initPosition.x) <= cubeLength / 2 
+          && Math.abs(cube.position.y - temp.initPosition.y) <= cubeLength / 2 
+          && Math.abs(cube.position.z - temp.initPosition.z) <= cubeLength / 2) {
+            cube.index = temp.initPosition.index;
+            break;
+          }
+      }
+    }
+  }
+  /**
+   * 魔方旋转公式：
+   * 顺时针: U, D, L, R, F, B 
+   * 逆时针: r, d, l, r, f, b
+   */
+  function U(rotateNum, next) {
+    // const cube2 = 
+  }
+
+  function D(rotateNum, next) {
+
+  }
+
+  function L(rotateNum, next) {
+
+  }
+
+  function R(rotateNum, next) {
+
+  }
+
+  function F(rotateNum, next) {
+
+  }
+
+  function B(rotateNum, next) {
+
+  }
+
+  /**
+   * 
+   * @param cube 目标立方体
+   * @param axis 目标轴方向
+   */
+  function getCubeFaceColor(cube, axis) {
+    const materials = cube.materials.materials;
+    const faces = cube.geometry.faces;
+    const normalMatrix = cube.normalMatrix;
+
+  }
+
+
+  /**
+   * 根据固定索引获取目标方块
+   * @param index 固定索引，相对世界坐标不变
+   * @param rotateYCount 绕 Y 轴逆时针旋转的次数
+   */
+  function getCubeByIndex(index, rotateYCount) {
+    const delta1 = [2, 18, -2, -18];
+    const delta2 = [10, 8, -10, -8];
+    const map1 = {  // cube index : delta start index
+       0: 0,  3: 0,  6: 0,
+       2: 1,  5: 1,  8: 1,
+      20: 2, 23: 2, 26: 2,
+      18: 3, 21: 3, 24: 3,
+    };
+    const map2 = {   // cube index : delta start index
+       1: 0,  4: 0,  7: 0,
+      11: 1, 14: 1, 17: 1,
+      19: 2, 22: 2, 25: 2,
+       9: 3, 12: 3, 15: 3,
+    }
+
+    let result = index;
+    if (map1.hasOwnProperty(index)) {
+      for (let i = map1[index]; i < rotateYCount; i++) {
+        result += map1[i % 4];
+      }
+    } else if (map2.hasOwnProperty(index)) {
+      for (let i = map2[index]; i < rotateYCount; i++) {
+        result += map2[i % 4];
+      }
+    } else {
+      // 10, 13, 16，即中心列
+      result = index;
+    }
+    return result;
+  }
+
+  /**
+   * 根据绕 Y 轴逆时针旋转的次数，对坐标轴进行转换
+   * @param vector 待转换的坐标轴
+   * @param rotateYCount 绕 Y 轴逆时针旋转的次数
+   */
+  function rotateAxisAroundWorldY(axis, rotateYCount) {
+    let result = axis;
+    for (let i = 0; i < rotateYCount; i++) {
+      if (axis.angleTo(xLine) == 0) {
+        // X -> -Z 
+        result = zLineAd.clone();
+      } else if (axis.angleTo(xLineAd) == 0) {
+        // -X -> Z 
+        result = zLine.clone();
+      } else if (axis.angleTo(zLine) == 0) {
+        // Z -> X 
+        result = xLine.clone();
+      } else {
+        // -Z -> -X 
+        result = xLineAd.clone();
+      }
+    }
+    return result;
+  }
   
 </script>
 
 
 <template>
   <div>
+    <ForkMeOnGitHub/>
   </div>
 </template>
 
