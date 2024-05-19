@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import ForkMeOnGitHub from './components/ForkMeOnGitHub.vue';
 import { vec2 } from 'three/examples/jsm/nodes/Nodes.js';
+import { step } from 'three/examples/jsm/nodes/Nodes.js';
+import { cos } from 'three/examples/jsm/nodes/Nodes.js';
 
 class CubePosition {
   constructor(x, y, z, index) {
@@ -25,17 +27,22 @@ class CubePosition {
   let startPoint;         // 鼠标焦点的起始位置
 
   // 魔方转动的六个方向
-  var xLine = new THREE.Vector3( 1, 0, 0 );     // X轴正方向
-  var xLineAd = new THREE.Vector3( -1, 0, 0 );  // X轴负方向
-  var yLine = new THREE.Vector3( 0, 1, 0 );     // Y轴正方向
-  var yLineAd = new THREE.Vector3( 0, -1, 0 );  // Y轴负方向
-  var zLine = new THREE.Vector3( 0, 0, 1 );     // Z轴正方向
-  var zLineAd = new THREE.Vector3( 0, 0, -1 );  // Z轴负方向
-
+  const xLine = new THREE.Vector3( 1, 0, 0 );     // X轴正方向
+  const xLineAd = new THREE.Vector3( -1, 0, 0 );  // X轴负方向
+  const yLine = new THREE.Vector3( 0, 1, 0 );     // Y轴正方向
+  const yLineAd = new THREE.Vector3( 0, -1, 0 );  // Y轴负方向
+  const zLine = new THREE.Vector3( 0, 0, 1 );     // Z轴正方向
+  const zLineAd = new THREE.Vector3( 0, 0, -1 );  // Z轴负方向
+    
   const width = window.innerWidth;
   const height = window.innerHeight;
   const rotateDuration = 500; // 转动的总运动时间
   const cubeLength = 1;
+
+  let isAutoRecover = false;
+  let topColor;
+  let btmColor;
+  let currentStep = 1;
 
   setup();
   animate();
@@ -290,8 +297,7 @@ class CubePosition {
         // 绕x轴
         for (let i = 0; i < cubes.length; i++) {
           let curr = cubes[i];
-          console.log(curr.position);
-          if (Math.abs(curr.position.x - cube.position.x) < 0.2) {
+          if (Math.abs(curr.position.x - cube.position.x) < cubeLength / 2) {
             results.push(curr);
           }
         }
@@ -301,8 +307,7 @@ class CubePosition {
         // 绕y轴
         for (let i = 0; i < cubes.length; i++) {
           let curr = cubes[i];
-          console.log(curr.position);
-          if (Math.abs(curr.position.y - cube.position.y) < 0.2) {
+          if (Math.abs(curr.position.y - cube.position.y) < cubeLength / 2) {
             results.push(curr);
           }
         }
@@ -312,8 +317,7 @@ class CubePosition {
         // 绕z轴
         for (let i = 0; i < cubes.length; i++) {
           let curr = cubes[i];
-          console.log(curr.position);
-          if (Math.abs(curr.position.z - cube.position.z) < 0.2) {
+          if (Math.abs(curr.position.z - cube.position.z) < cubeLength / 2) {
             results.push(curr);
           }
         }
@@ -415,7 +419,7 @@ class CubePosition {
     return direction;
   }
 
-  function rotateAnimation(cubes, direction, currentstamp, startstamp, laststamp) {
+  function rotateAnimation(cubes, direction, currentstamp, startstamp, laststamp, callback) {
     if(startstamp === 0){
         startstamp = currentstamp;
         laststamp = currentstamp;   
@@ -449,14 +453,28 @@ class CubePosition {
     }
     if(!isLastRotate){
       requestAnimationFrame((timestamp) => {
-        rotateAnimation(cubes, direction, timestamp, startstamp, currentstamp);
+        rotateAnimation(cubes, direction, timestamp, startstamp, currentstamp, callback);
       });
     } else {
       isRotating = false;
       startPoint = null;
       // 旋转完成后更新索引
       updateCubeIndex();
-      const cube = getCubeByIndex(0);
+      if (callback) {
+        // 旋转完成，执行回调
+        callback();
+      } else {
+        console.log("rotateAnimationEnd");
+        // if (isAutoRecover) {
+        //   switch (currentStep) {
+        //     case 1:
+        //       step1();
+        //       break;
+        //     default:
+        //       break;
+        //   }
+        // }
+      }
     }
   }
 
@@ -490,10 +508,21 @@ class CubePosition {
     cube.position.y = Math.cos(rad) * y0 + Math.sin(rad) * x0;
   }
 
+  function randomButtonClick() {
+    if (!isRotating && !isAutoRecover) {
+      randomRotate();
+    }
+  }
+
+  function recoverButtonClick() {
+      autoRecover();
+  }
+
   /**
    * 更新立方体索引
    */
   function updateCubeIndex() {
+    console.log("updateCubeIndex");
     for (let i = 0; i < cubes.length; i++) {
       const cube = cubes[i];
       for (let j = 0; j < cubes.length; j++) {
@@ -507,34 +536,6 @@ class CubePosition {
       }
     }
   }
-  /**
-   * 魔方旋转公式：
-   * 顺时针: U, D, L, R, F, B 
-   * 逆时针: r, d, l, r, f, b
-   */
-  function U(rotateNum, next) {
-    // const cube2 = 
-  }
-
-  function D(rotateNum, next) {
-
-  }
-
-  function L(rotateNum, next) {
-
-  }
-
-  function R(rotateNum, next) {
-
-  }
-
-  function F(rotateNum, next) {
-
-  }
-
-  function B(rotateNum, next) {
-
-  }
 
   /**
    * 
@@ -542,10 +543,58 @@ class CubePosition {
    * @param axis 目标轴方向
    */
   function getCubeFaceColor(cube, axis) {
-    const materials = cube.materials.materials;
-    const faces = cube.geometry.faces;
-    const normalMatrix = cube.normalMatrix;
+    const positions = cube.geometry.attributes.position.array;
+    const indexs = cube.geometry.index.array;
+    const groups = cube.geometry.groups;
+    let points = [];
+    let normals = [];    
+    for (let i = 0; i < positions.length; i += 3) {
+      const point = new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]);
+      points.push(point);
+    }    
+    for (let i = 0; i < groups.length; i++) {
+      const group = groups[i];
+      const index = group.start;
+      const p1 = points[indexs[index]];
+      const p2 = points[indexs[index+1]];
+      const p3 = points[indexs[index+2]];
+      let vectorAB = new THREE.Vector3().subVectors(p2, p1);
+      let vectorAC = new THREE.Vector3().subVectors(p3, p1);
+      // 计算法向量（N）：AB x AC
+      let normal = new THREE.Vector3().crossVectors(vectorAB, vectorAC);
+      // 可选：规范化法向量
+      normal.normalize();
+      normals.push(normal);
+    }
 
+    // 将 axis 从世界坐标系转换成视图坐标系
+    var viewMatrix = new THREE.Matrix4();
+    viewMatrix.lookAt(camera.position, new THREE.Vector3(0, 0, 0), camera.up);  // 设置为视图矩阵，对应于 camera 的视角
+    viewMatrix.invert();  // 计算逆矩阵，用于将世界坐标系转换成视图坐标系
+    var tempVector = axis.clone();
+    tempVector.applyMatrix4(viewMatrix);    // 应用逆矩阵，将入参向量转换成视图坐标系
+
+    // 将表面法向量，从模型坐标系转换成视图坐标系
+    const normalMatrix = cube.normalMatrix;
+    let materialIndex = 0;
+    let minAngle = 0;
+    let angles = []
+    for (var i = 0; i < normals.length; i++) {
+        var normal = normals[i].clone();
+        normal.applyMatrix3(normalMatrix); // 对于表面法向量，将其从模型坐标系转换成视图坐标系。
+        const angle = normal.angleTo(tempVector); // 两者之间的夹角
+        angles.push(angle);
+        if (i == 0) {
+          materialIndex = 0;
+          minAngle = angle;
+        } else {
+          if (angle < minAngle) {
+            materialIndex = i;
+            minAngle = angle;
+          }
+        }
+    }
+    return materialIndex;  // 找到夹角最小的索引值，返回对应索引值。
   }
 
 
@@ -572,18 +621,27 @@ class CubePosition {
 
     let result = index;
     if (map1.hasOwnProperty(index)) {
-      for (let i = map1[index]; i < rotateYCount; i++) {
-        result += map1[i % 4];
+      for (let i = 0; i < rotateYCount; i++) {
+        let offset = map1[index] + i;
+        result += delta1[offset % 4];
       }
     } else if (map2.hasOwnProperty(index)) {
-      for (let i = map2[index]; i < rotateYCount; i++) {
-        result += map2[i % 4];
+      for (let i = 0; i < rotateYCount; i++) {
+        let offset = map2[index] + i;
+        result += delta2[offset % 4];
       }
     } else {
       // 10, 13, 16，即中心列
       result = index;
     }
-    return result;
+    let cube;
+    for (let i = 0; i < cubes.length; i++) {
+      if (cubes[i].index == result) {
+        cube = cubes[i];
+        break;
+      }
+    }
+    return cube;
   }
 
   /**
@@ -594,29 +652,339 @@ class CubePosition {
   function rotateAxisAroundWorldY(axis, rotateYCount) {
     let result = axis;
     for (let i = 0; i < rotateYCount; i++) {
-      if (axis.angleTo(xLine) == 0) {
+      if (result.angleTo(xLine) == 0) {
         // X -> -Z 
         result = zLineAd.clone();
-      } else if (axis.angleTo(xLineAd) == 0) {
+      } else if (result.angleTo(xLineAd) == 0) {
         // -X -> Z 
         result = zLine.clone();
-      } else if (axis.angleTo(zLine) == 0) {
+      } else if (result.angleTo(zLine) == 0) {
         // Z -> X 
         result = xLine.clone();
-      } else {
+      } else if (result.angleTo(zLineAd) == 0) {
         // -Z -> -X 
         result = xLineAd.clone();
       }
     }
     return result;
   }
-  
-</script>
 
+  /**
+   * 随机旋转
+   */
+  function randomRotate() {
+    if (!isRotating && !isAutoRecover) {
+      const steps = parseInt(10 * Math.random()) + 10; 
+      const ops = [U, u, D, d, L, l, R, r, F, f, B, b];
+      const queue = [];
+      for (let i = 0; i < steps; i++) {
+        const index = parseInt(Math.random() * ops.length);
+        queue.push(ops[index]);
+      }
+      runOps(queue, 0, 0);
+    }
+  }
+
+  function runOps(ops, index, rotateYCount, callback) {
+    if (index >= ops.length - 1) {
+      if (callback) {
+        ops[index](rotateYCount, callback);
+      } else {
+        ops[index](rotateYCount);
+      }
+    } else {
+      // 递归执行
+      ops[index](rotateYCount, () => {
+        if (index < ops.length - 1) {
+          index++;
+          runOps(ops, index, rotateYCount, callback);
+        }
+      });
+    }
+  }
+
+    /**
+   * 魔方旋转公式：
+   * 顺时针: U, D, L, R, F, B 
+   * 逆时针: u, d, l, r, f, b
+   */
+   function U(rotateYCount, callback) {
+    console.log("U: "+ rotateYCount);
+    const cube2 = getCubeByIndex(2, rotateYCount);
+    const n_zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+    const d_xLineAd = rotateAxisAroundWorldY(xLineAd, rotateYCount);
+    normalize = n_zLine;
+    console.log(cube2.initPosition);
+    console.log(cube2.position);
+    console.log(n_zLine);
+    console.log(d_xLineAd);
+    rotateTo(cube2, d_xLineAd, callback);
+  }
+
+  function u(rotateYCount, callback) {
+    console.log("u: "+ rotateYCount);
+    const cube2 = getCubeByIndex(2, rotateYCount);
+    const n_xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
+    const d_zLineAd = rotateAxisAroundWorldY(zLineAd, rotateYCount);
+    normalize = n_xLine;
+    rotateTo(cube2, d_zLineAd, callback);
+  }
+
+  function D(rotateYCount, callback) {
+    console.log("D: "+ rotateYCount);
+    const cube8 = getCubeByIndex(8, rotateYCount);
+    const n_xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
+    const d_zLineAd = rotateAxisAroundWorldY(zLineAd, rotateYCount);
+    normalize = n_xLine;
+    rotateTo(cube8, d_zLineAd, callback);
+  }
+
+  function d(rotateYCount, callback) {
+    console.log("d: "+ rotateYCount);
+    const cube8 = getCubeByIndex(8, rotateYCount);
+    const n_zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+    const d_xLineAd = rotateAxisAroundWorldY(xLineAd, rotateYCount);
+    normalize = n_zLine;
+    rotateTo(cube8, d_xLineAd, callback);
+  }
+
+  function L(rotateYCount, callback) {
+    console.log("L: "+ rotateYCount);
+    const cube0 = getCubeByIndex(0, rotateYCount);
+    const n_zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+    const d_yLineAd = rotateAxisAroundWorldY(yLineAd, rotateYCount);
+    normalize = n_zLine;
+    rotateTo(cube0, d_yLineAd, callback); 
+  }
+
+  function l(rotateYCount, callback) {
+    console.log("l: "+ rotateYCount);
+    const cube0 = getCubeByIndex(0, rotateYCount);
+    const n_yLine = rotateAxisAroundWorldY(yLine, rotateYCount);
+    const d_zLineAd = rotateAxisAroundWorldY(zLineAd, rotateYCount);
+    normalize = n_yLine;
+    console.log(cube0.initPosition);
+    console.log(cube0.position);
+    console.log(n_yLine);
+    console.log(d_zLineAd);
+    rotateTo(cube0, d_zLineAd, callback); 
+  }
+
+  function R(rotateYCount, callback) {
+    console.log("R: "+ rotateYCount);
+    const cube2 = getCubeByIndex(2, rotateYCount);
+    const n_yLine = rotateAxisAroundWorldY(yLine, rotateYCount);
+    const d_zLineAd = rotateAxisAroundWorldY(zLineAd, rotateYCount);
+    normalize = n_yLine;
+    rotateTo(cube2, d_zLineAd, callback); 
+  }
+
+  function r(rotateYCount, callback) {
+    console.log("r: "+ rotateYCount);
+    const cube2 = getCubeByIndex(2, rotateYCount);
+    const n_zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+    const d_yLineAd = rotateAxisAroundWorldY(yLineAd, rotateYCount);
+    normalize = n_zLine;
+    rotateTo(cube2, d_yLineAd, callback); 
+  }
+
+  function F(rotateYCount, callback) {
+    console.log("F: "+ rotateYCount);
+    const cube2 = getCubeByIndex(2, rotateYCount);
+    const n_xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
+    const d_yLineAd = rotateAxisAroundWorldY(yLineAd, rotateYCount);
+    normalize = n_xLine;
+    rotateTo(cube2, d_yLineAd, callback); 
+  }
+
+  function f(rotateYCount, callback) {
+    console.log("f: "+ rotateYCount);
+    const cube2 = getCubeByIndex(2, rotateYCount);
+    const n_yLine = rotateAxisAroundWorldY(yLine, rotateYCount);
+    const d_xLineAd = rotateAxisAroundWorldY(xLineAd, rotateYCount);
+    normalize = n_yLine;
+    rotateTo(cube2, d_xLineAd, callback); 
+  }
+
+  function B(rotateYCount, callback) {
+    console.log("B: "+ rotateYCount);
+    const cube20 = getCubeByIndex(20, rotateYCount);
+    const n_yLine = rotateAxisAroundWorldY(yLine, rotateYCount);
+    const d_xLineAd = rotateAxisAroundWorldY(xLineAd, rotateYCount);
+    normalize = n_yLine;
+    rotateTo(cube20, d_xLineAd, callback); 
+  }
+
+  function b(rotateYCount, callback) {
+    console.log("b: "+ rotateYCount);
+    const cube20 = getCubeByIndex(20, rotateYCount);
+    const n_xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
+    const d_yLineAd = rotateAxisAroundWorldY(yLineAd, rotateYCount);
+    normalize = n_xLine;
+    rotateTo(cube20, d_yLineAd, callback); 
+  }
+
+  function rotateTo(cube, vector3, callback) {
+    isRotating = true;
+    const direction = getDirection(vector3);
+    const cubes = getPlaneCubes(cube, direction);
+    window.requestAnimationFrame((timestamp) => {
+      rotateAnimation(cubes, direction, timestamp, 0, null, callback);
+    });
+  }
+  
+  /**
+   * 第一步：小白花
+   */
+  function step1() {
+    if (checkStep1()) {
+      // TODO: @baocq remove
+      isAutoRecover = false;
+      console.log("step1 success");
+      currentStep = 2;
+      return;
+    }
+    // 绕 Y 周四个面旋转一周，执行一样的操作
+    console.log("recover ...");
+    // for (let i = 0; i < 4; i++) {
+    //   step1Case1(i);
+    //   step1Case2(i);
+    //   step1Case3(i);
+    //   step1Case4(i);
+    // }
+    step1Case1(0);
+    step1Case1(1);
+    step1Case1(2);
+    step1Case1(3);
+
+    step1Case2(0);
+    step1Case2(1);
+    step1Case2(2);
+    step1Case2(3);
+
+    step1Case3(0);
+    step1Case3(1);
+    step1Case3(2);
+    step1Case3(3);
+
+    step1Case4(0);
+    step1Case4(1);
+    step1Case4(2);
+    step1Case4(3);
+
+  }
+
+  function checkStep1() {
+    const indexs = [1, 9, 11, 19];
+    let result = true;
+    for (let i = 0; i < indexs.length; i++) {
+      let cube = getCubeByIndex(indexs[i]);
+      let color = getCubeFaceColor(cube, yLine);
+      if (color != btmColor) {
+        result = false;
+        break;
+      }
+    }
+    return result;
+  }
+
+  function step1Case1(rotateYCount) {
+    if (!isRotating) {
+      console.log("step1Case1: " + rotateYCount);
+      let cube3 = getCubeByIndex(3, rotateYCount);
+      let cube9 = getCubeByIndex(9, rotateYCount);
+      let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+
+      if (getCubeFaceColor(cube3, _zLine) == btmColor) {
+        if (getCubeFaceColor(cube9, yLine) != btmColor) {
+          l(rotateYCount);
+        } else {
+          u(rotateYCount);
+        }
+      }
+    }
+  }
+  function step1Case2(rotateYCount) {
+    if (!isRotating) {
+      console.log("step1Case2: " + rotateYCount);
+      let cube5 = getCubeByIndex(5, rotateYCount);
+      let cube11 = getCubeByIndex(11, rotateYCount);
+      let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+
+      if (getCubeFaceColor(cube5, _zLine) == btmColor) {
+        if (getCubeFaceColor(cube11, yLine) != btmColor) {
+          R(rotateYCount);
+        } else {
+          u(rotateYCount);
+        }
+      }
+    }
+  }
+  function step1Case3(rotateYCount) {
+    if (!isRotating) {
+      console.log("step1Case3: " + rotateYCount);
+      let cube15 = getCubeByIndex(15, rotateYCount);
+      let cube9 = getCubeByIndex(9, rotateYCount);
+      let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+
+      if (getCubeFaceColor(cube15, yLineAd) == btmColor) {
+        if (getCubeFaceColor(cube9, yLine) != btmColor) {
+          l(rotateYCount);
+        } else {
+          u(rotateYCount);
+        }
+      } 
+    }
+  }
+  function step1Case4(rotateYCount) {
+    if (!isRotating) {
+      console.log("step1Case4: " + rotateYCount);
+      let cube1 = getCubeByIndex(1, rotateYCount);
+      let cube7 = getCubeByIndex(7, rotateYCount);
+      let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+
+      if (getCubeFaceColor(cube1, _zLine) == btmColor || getCubeFaceColor(cube7, _zLine) == btmColor) {
+        if (getCubeFaceColor(cube1, yLine) != btmColor) {
+          F(rotateYCount);
+        } else {
+          D(rotateYCount);
+        }
+      }
+    }
+  }
+
+  function autoRecover() {
+    let topCenterCube = getCubeByIndex(10);
+    topColor = getCubeFaceColor(topCenterCube, yLine);
+    btmColor = getCubeFaceColor(topCenterCube, yLineAd);
+    
+    isAutoRecover = true;
+    currentStep = 1;
+    step1();
+  }
+
+
+  /**
+   * =====================================================
+   */
+  function min(arr){
+    var min = arr[0];
+    for(var i = 1; i < arr.length; i++){
+      if (arr[i] < min) {
+        min = arr[i];
+      }
+    }
+    return min;
+  }
+</script>
 
 <template>
   <div>
     <ForkMeOnGitHub/>
+    <div class="fixed-top-left">
+      <button @click="randomButtonClick" class="random-button-class">随机打乱</button>
+      <button @click="recoverButtonClick" class="recover-button-class">自动复原</button>
+    </div>
   </div>
 </template>
 
@@ -632,5 +1000,23 @@ canvas {
   top: 0;
   width: 100vw;
   height: 100vh;
+}
+
+.fixed-top-left {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 10px; /* 添加一点边距，以便不会紧贴于屏幕边缘 */
+}
+
+button {
+  /* 按钮样式（根据需要调整） */
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin: 2px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style>
