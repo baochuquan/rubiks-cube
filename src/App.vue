@@ -465,15 +465,15 @@ class CubePosition {
         callback();
       } else {
         console.log("rotateAnimationEnd");
-        // if (isAutoRecover) {
-        //   switch (currentStep) {
-        //     case 1:
-        //       step1();
-        //       break;
-        //     default:
-        //       break;
-        //   }
-        // }
+        if (isAutoRecover) {
+          switch (currentStep) {
+            case 1:
+              step1();
+              break;
+            default:
+              break;
+          }
+        }
       }
     }
   }
