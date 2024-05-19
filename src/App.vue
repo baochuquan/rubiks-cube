@@ -470,6 +470,9 @@ class CubePosition {
             case 1:
               step1();
               break;
+            case 2:
+              step2();
+              break;
             default:
               break;
           }
@@ -522,7 +525,6 @@ class CubePosition {
    * 更新立方体索引
    */
   function updateCubeIndex() {
-    console.log("updateCubeIndex");
     for (let i = 0; i < cubes.length; i++) {
       const cube = cubes[i];
       for (let j = 0; j < cubes.length; j++) {
@@ -644,6 +646,14 @@ class CubePosition {
     return cube;
   }
 
+  function getCubeByIndexs(indexs) {
+    let results = [];
+    for (let i = 0; i < indexs.length; i++) {
+      results.push(getCubeByIndex(indexs[i]));
+    }
+    return results;
+  }
+
   /**
    * 根据绕 Y 轴逆时针旋转的次数，对坐标轴进行转换
    * @param vector 待转换的坐标轴
@@ -714,10 +724,6 @@ class CubePosition {
     const n_zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
     const d_xLineAd = rotateAxisAroundWorldY(xLineAd, rotateYCount);
     normalize = n_zLine;
-    console.log(cube2.initPosition);
-    console.log(cube2.position);
-    console.log(n_zLine);
-    console.log(d_xLineAd);
     rotateTo(cube2, d_xLineAd, callback);
   }
 
@@ -763,10 +769,6 @@ class CubePosition {
     const n_yLine = rotateAxisAroundWorldY(yLine, rotateYCount);
     const d_zLineAd = rotateAxisAroundWorldY(zLineAd, rotateYCount);
     normalize = n_yLine;
-    console.log(cube0.initPosition);
-    console.log(cube0.position);
-    console.log(n_yLine);
-    console.log(d_zLineAd);
     rotateTo(cube0, d_zLineAd, callback); 
   }
 
@@ -839,9 +841,9 @@ class CubePosition {
   function step1() {
     if (checkStep1()) {
       // TODO: @baocq remove
-      isAutoRecover = false;
       console.log("step1 success");
       currentStep = 2;
+      step2();
       return;
     }
     // 绕 Y 周四个面旋转一周，执行一样的操作
@@ -953,6 +955,130 @@ class CubePosition {
     }
   }
 
+  function step2() {
+    if (checkStep2()) {
+      console.log("step2 success");
+      currentStep = 3;
+      return;
+    }
+    step2Case1(0);
+    step2Case1(1);
+    step2Case1(2);
+    step2Case1(3);
+
+    // step2Case2(0);
+    // step2Case2(1);
+    // step2Case2(2);
+    // step2Case2(3);
+
+    // step2Case3(0);
+    // step2Case3(1);
+    // step2Case3(2);
+    // step2Case3(3);
+  }
+
+  function checkStep2() {
+    const indexs = [4, 7, 14, 17, 22, 25, 12, 15];
+    const normals = [zLine, xLine, zLineAd, xLineAd];
+    const cubes = getCubeByIndexs(indexs);
+    for (let i = 0; i < cubes.length; i++) {
+      let index = parseInt(i / 2);
+      let color1 = getCubeFaceColor(cubes[i], normals[index]);
+      if (color1 == topColor || color1 == btmColor) {
+        return false;
+      }
+      if (i % 2 == 0) {
+        let color2 = getCubeFaceColor(cubes[i + 1], normals[index]);
+        if (color1 != color2) {
+          return false;
+        }
+      }
+    }
+    // 底部十字
+    for (let i = 1; i < cubes.length; i = i + 2) {
+      let color = getCubeFaceColor(cubes[i], yLineAd);
+      if (color != btmColor) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function step2Case1(rotateYCount) {
+    if (!isRotating) {
+      console.log("step2Case1: " + rotateYCount);
+      let cube1 = getCubeByIndex(1, rotateYCount);
+      let cube4 = getCubeByIndex(4, rotateYCount);
+      let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
+      if (getCubeFaceColor(cube1, yLine) == btmColor) {
+        if (getCubeFaceColor(cube1, _zLine) == getCubeFaceColor(cube4, _zLine)) {
+          // 旋转 180 度
+          F(rotateYCount, () => {
+            F(rotateYCount);
+          });
+        } else {
+          u(rotateYCount, () => {
+            rotateYCount++;
+            if (rotateYCount >= 4) {
+              rotateYCount = 0;
+            }
+            step2Case1(rotateYCount);
+          });
+        }
+      }
+    }
+  }
+
+  function step2Case2(rotateYCount) { 
+    if (!isRotating) {
+      console.log("step2Case2: " + rotateYCount);
+      let cube7 = getCubeByIndex(7, rotateYCount);
+      let cube8 = getCubeByIndex(8, rotateYCount); 
+      let cube2 = getCubeByIndex(2, rotateYCount);
+      let xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
+      if (getCubeFaceColor(cube7, yLineAd) == btmColor && getCubeFaceColor(cube8, yLineAd) == btmColor) {
+        if (getCubeFaceColor(cube2, xLine) != btmColor) {
+          R(rotateYCount, () => {
+            u(rotateYCount, () => {
+              r(rotateYCount);
+            });
+          });
+        } else {
+          f(rotateYCount, () => {
+            u(rotateYCount, () => {
+              F(rotateYCount);
+            });
+          });
+        }
+      }
+    }
+  }
+
+  function step2Case3(rotateYCount) {
+    if (!isRotating) {
+      console.log("step2Case3: " + rotateYCount);
+      let cube7 = getCubeByIndex(7, rotateYCount);
+      let cube6 = getCubeByIndex(6, rotateYCount); 
+      let cube0 = getCubeByIndex(0, rotateYCount);
+      let xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
+      if (getCubeFaceColor(cube7, yLineAd) == btmColor && getCubeFaceColor(cube6, yLineAd) == btmColor) {
+        if (getCubeFaceColor(cube0, xLine) != btmColor) {
+          l(rotateYCount, () => {
+            u(rotateYCount, () => {
+              L(rotateYCount);
+            });
+          });
+        } else {
+          f(rotateYCount, () => {
+            u(rotateYCount, () => {
+              F(rotateYCount);
+            });
+          });
+        }
+      }
+    }
+  }
+
   function autoRecover() {
     let topCenterCube = getCubeByIndex(10);
     topColor = getCubeFaceColor(topCenterCube, yLine);
@@ -960,7 +1086,15 @@ class CubePosition {
     
     isAutoRecover = true;
     currentStep = 1;
-    step1();
+    if (checkStep2()) {
+      currentStep = 3;
+    } else if (checkStep1()) {
+      currentStep = 2;
+      step2();
+    } else {
+      currentStep = 1;
+      step1();
+    }
   }
 
 
