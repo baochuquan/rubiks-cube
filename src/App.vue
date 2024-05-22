@@ -39,6 +39,7 @@ class CubePosition {
   const rotateDuration = 500; // 转动的总运动时间
   const cubeLength = 1;
 
+  let isAutoRandom = false;
   let isAutoRecover = false;
   let topColor;
   let btmColor;
@@ -229,7 +230,6 @@ class CubePosition {
   function stopMouse(event) {
     startCube = null;
     startPoint = null;
-    // TODO: @baocq
     isRotating = false;
     controller.enabled = true;
   }
@@ -467,7 +467,6 @@ class CubePosition {
         // 旋转完成，执行回调
         callback();
       } else {
-        console.log("rotateAnimationEnd");
         if (isAutoRecover) {
           switch (currentStep) {
             case 1:
@@ -532,14 +531,20 @@ class CubePosition {
     cube.position.y = Math.cos(rad) * y0 + Math.sin(rad) * x0;
   }
 
-  function randomButtonClick() {
-    if (!isRotating && !isAutoRecover) {
-      randomRotate();
+  function autoRandomButtonClick() {
+    if (!isRotating && !isAutoRecover && !isAutoRandom) {
+      autoRandom();
+    } else {
+      console.log(".....")
     }
   }
 
-  function recoverButtonClick() {
+  function autoRecoverButtonClick() {
+    if (!isRotating && !isAutoRecover && !isAutoRandom) {
       autoRecover();
+    } else {
+      console.log("xxxxxx")
+    }
   }
 
   /**
@@ -704,17 +709,18 @@ class CubePosition {
   /**
    * 随机旋转
    */
-  function randomRotate() {
-    if (!isRotating && !isAutoRecover) {
-      const steps = parseInt(10 * Math.random()) + 10; 
-      const ops = [U, u, D, d, L, l, R, r, F, f, B, b];
-      const queue = [];
-      for (let i = 0; i < steps; i++) {
-        const index = parseInt(Math.random() * ops.length);
-        queue.push(ops[index]);
-      }
-      runOps(queue, 0, 0);
+  function autoRandom() {
+    isAutoRandom = true;
+    const steps = parseInt(10 * Math.random()) + 10; 
+    const ops = [U, u, D, d, L, l, R, r, F, f, B, b];
+    const queue = [];
+    for (let i = 0; i < steps; i++) {
+      const index = parseInt(Math.random() * ops.length);
+      queue.push(ops[index]);
     }
+    runOps(queue, 0, 0, () => {
+      isAutoRandom = false;
+    });
   }
 
   function runOps(ops, index, rotateYCount, callback) {
@@ -862,8 +868,6 @@ class CubePosition {
    */
   function step1() {
     if (checkStep1()) {
-      // TODO: @baocq remove
-      console.log("step1 success");
       currentStep = 2;
       step2();
       return;
@@ -907,7 +911,6 @@ class CubePosition {
 
   function step1Case1(rotateYCount) {
     if (!isRotating) {
-      console.log("step1Case1: " + rotateYCount);
       let cube3 = getCubeByIndex(3, rotateYCount);
       let cube9 = getCubeByIndex(9, rotateYCount);
       let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
@@ -923,7 +926,6 @@ class CubePosition {
   }
   function step1Case2(rotateYCount) {
     if (!isRotating) {
-      console.log("step1Case2: " + rotateYCount);
       let cube5 = getCubeByIndex(5, rotateYCount);
       let cube11 = getCubeByIndex(11, rotateYCount);
       let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
@@ -939,7 +941,6 @@ class CubePosition {
   }
   function step1Case3(rotateYCount) {
     if (!isRotating) {
-      console.log("step1Case3: " + rotateYCount);
       let cube15 = getCubeByIndex(15, rotateYCount);
       let cube9 = getCubeByIndex(9, rotateYCount);
       let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
@@ -955,7 +956,6 @@ class CubePosition {
   }
   function step1Case4(rotateYCount) {
     if (!isRotating) {
-      console.log("step1Case4: " + rotateYCount);
       let cube1 = getCubeByIndex(1, rotateYCount);
       let cube7 = getCubeByIndex(7, rotateYCount);
       let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
@@ -972,7 +972,6 @@ class CubePosition {
 
   function step2() {
     if (checkStep2()) {
-      console.log("step2 success");
       currentStep = 3;
       step3();
       return;
@@ -1031,7 +1030,6 @@ class CubePosition {
 
   function step2Case1(rotateYCount) {
     if (!isRotating) {
-      console.log("step2Case1: " + rotateYCount);
       let cube1 = getCubeByIndex(1, rotateYCount);
       let cube4 = getCubeByIndex(4, rotateYCount);
       let _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
@@ -1056,7 +1054,6 @@ class CubePosition {
 
   function step2Case2(rotateYCount) { 
     if (!isRotating) {
-      console.log("step2Case2: " + rotateYCount);
       let cube7 = getCubeByIndex(7, rotateYCount);
       let cube8 = getCubeByIndex(8, rotateYCount); 
       let cube2 = getCubeByIndex(2, rotateYCount);
@@ -1081,7 +1078,6 @@ class CubePosition {
 
   function step2Case3(rotateYCount) {
     if (!isRotating) {
-      console.log("step2Case3: " + rotateYCount);
       let cube7 = getCubeByIndex(7, rotateYCount);
       let cube6 = getCubeByIndex(6, rotateYCount); 
       let cube0 = getCubeByIndex(0, rotateYCount);
@@ -1106,14 +1102,11 @@ class CubePosition {
 
   function step3() {
     if (checkStep3()) {
-      console.log('step3 success');
       currentStep = 4;
       startFaceNo = 0;
       endFaceNo = 3;
       step4();
       return;
-    } else {
-      console.log("step3 failure");
     }
     step3Case1(0);
     step3Case1(1);
@@ -1169,7 +1162,6 @@ function checkStep3() {
   //底角归位第一种情况
   function step3Case1(rotateYCount, startNum) {
     if (!isRotating) {
-      console.log("step3Case1: " + rotateYCount + "; " + startNum);
       var cube2 = getCubeByIndex(2, rotateYCount);
       var cube4 = getCubeByIndex(4, rotateYCount);
       var cube7 = getCubeByIndex(7, rotateYCount);
@@ -1195,7 +1187,6 @@ function checkStep3() {
             })
           })
         } else {
-          console.log("step3Case1 else");
           u(rotateYCount, function () {
             rotateYCount++;
             if (rotateYCount >= 4) {
@@ -1204,10 +1195,8 @@ function checkStep3() {
             if (startNum != rotateYCount) {//防止重复检测造成无限循环
               if (startNum == null || startNum == undefined) {
                 startNum = rotateYCount - 1;
-                console.log("step3Case1 A");
                 step3Case1(rotateYCount, startNum);
               } else {
-                console.log("step3Case1 B");
                 step3Case1(rotateYCount, startNum);
               }
             } else {
@@ -1223,7 +1212,6 @@ function checkStep3() {
         //底角归位第二种情况
   function step3Case2(rotateYCount, startNum) {
     if (!isRotating) {
-      console.log("step3Case2: " + rotateYCount + "; " + startNum);
       var _xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
       var _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
       var _zLineAd = rotateAxisAroundWorldY(zLineAd, rotateYCount);
@@ -1274,7 +1262,6 @@ function checkStep3() {
     //底角归位第三种情况
   function step3Case3(rotateYCount, startNum) {
     if (!isRotating) {
-      console.log("step3Case3: " + rotateYCount + "; " + startNum);
       var _xLine = rotateAxisAroundWorldY(xLine, rotateYCount);
       var _zLine = rotateAxisAroundWorldY(zLine, rotateYCount);
       var _zLineAd = rotateAxisAroundWorldY(zLineAd, rotateYCount);
@@ -1330,7 +1317,6 @@ function checkStep3() {
   //底角归位第四种情况
   function step3Case4(rotateYCount) {
     if (!isRotating) {
-      console.log("step3Case4: " + rotateYCount);
       var cube8 = getCubeByIndex(8, rotateYCount);
       var cube17 = getCubeByIndex(17, rotateYCount);
       var cube14 = getCubeByIndex(14, rotateYCount);
@@ -1366,7 +1352,6 @@ function checkStep3() {
   //底角归位第五种情况
   function step3Case5(rotateYCount) {
     if (!isRotating) {
-      console.log("step3Case5: " + rotateYCount);
       var cube8 = getCubeByIndex(8, rotateYCount);
       var cube4 = getCubeByIndex(4, rotateYCount);
       var cube7 = getCubeByIndex(7, rotateYCount);
@@ -1404,9 +1389,7 @@ function checkStep3() {
 
   // 第四步 中棱归位
   function step4() {
-    console.log("step4");
     if (checkStep4()) {
-      console.log('start step5');
       currentStep = 5;
       step5();
       return;
@@ -1417,7 +1400,6 @@ function checkStep3() {
   // 判断是否完成第四步 中间层棱块归位
   function checkStep4() {
     if (!checkStep3()) {
-      console.log("false 1");
       return false;
     }
 
@@ -1426,7 +1408,6 @@ function checkStep3() {
     let cube5 = getCubeByIndex(5);
     let zLine3Color = getCubeFaceColor(cube3, zLine);
     if (getCubeFaceColor(cube4, zLine) != zLine3Color || getCubeFaceColor(cube5, zLine) != zLine3Color) {
-      console.log("false 2");
       return false;
     }
 
@@ -1434,7 +1415,6 @@ function checkStep3() {
     var cube23 = getCubeByIndex(23);
     var xLine5Color = getCubeFaceColor(cube5, xLine);
     if (getCubeFaceColor(cube14, xLine) != xLine5Color || getCubeFaceColor(cube23, xLine) != xLine5Color) {
-      console.log("false 3");
       return false;
     }
 
@@ -1442,17 +1422,14 @@ function checkStep3() {
     var cube22 = getCubeByIndex(22);
     var zLineAd23Color = getCubeFaceColor(cube23, zLineAd);
     if (getCubeFaceColor(cube21, zLineAd) != zLineAd23Color || getCubeFaceColor(cube22, zLineAd) != zLineAd23Color) {
-      console.log("false 4");
       return false;
     }
 
     var cube12 = getCubeByIndex(12);
     var xLineAd3Color = getCubeFaceColor(cube3, xLineAd);
     if (getCubeFaceColor(cube12, xLineAd) != xLineAd3Color || getCubeFaceColor(cube21, xLineAd) != xLineAd3Color) {
-      console.log("false 5");
       return false;
     }
-    console.log("true");
     return true;
   }
   
@@ -1494,7 +1471,6 @@ function checkStep3() {
         
   // 中棱归位优先还原一个面
   function step4Face(rotateYCount) {
-    console.log("step4Face: " + rotateYCount);
     if (!isRotating) {
       if (rotateYCount > 3) {
           rotateYCount = rotateYCount - 4;
@@ -1641,7 +1617,6 @@ function checkStep3() {
   //第五步 顶棱面位
   function step5() {
     if (checkStep5()) {
-        console.log('start step6');
         currentStep = 6;
         step6();
         return;
@@ -1752,7 +1727,6 @@ function checkStep3() {
   // 第六步 顶角面位
   function step6() {
     if (checkStep6()) {
-      console.log('start step7');
       currentStep = 7;
       step7();
       return;
@@ -1821,7 +1795,6 @@ function checkStep3() {
   //第七步 顶棱归位
   function step7() {
     if (checkStep7()) {
-      console.log('start step8');
       currentStep = 8;
       step8();
       return;
@@ -1954,6 +1927,7 @@ function checkStep3() {
   function step8() {
     if (checkStep8()) {
       isAutoRecover = false;
+      console.log("finish...")
       return;
     }
 
@@ -2127,8 +2101,8 @@ function checkStep3() {
   <div>
     <ForkMeOnGitHub/>
     <div class="fixed-top-left">
-      <button @click="randomButtonClick" class="random-button-class">随机打乱</button>
-      <button @click="recoverButtonClick" class="recover-button-class">自动复原</button>
+      <button @click="autoRandomButtonClick" class="random-button-class">随机打乱</button>
+      <button @click="autoRecoverButtonClick" class="recover-button-class">自动复原</button>
     </div>
   </div>
 </template>
