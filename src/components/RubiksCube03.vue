@@ -54,7 +54,6 @@ class CubePosition {
   function setup() {
     setupScene();
     setupCamera();
-    // setupAxesHelper();
     setupLights();
     setupRubiks();
     setupCubes();
@@ -78,11 +77,6 @@ class CubePosition {
     camera.position.set(6, 8, 6);
     camera.lookAt(0, 3, 0);
     camera.updateProjectionMatrix();
-  }
-
-  function setupAxesHelper() {
-    const axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
   }
 
   function setupLights() {

@@ -2,18 +2,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-class Cube {
-  constructor(position, index) {
-    this.position = position
-    this.index = index
-  }
-}
   let scene, camera, renderer, controller;
   let rubiks;             // 魔方的整体
   let cubes;              // 魔方的组成，即立方体列表。
-  let rotate;
-  let origin;             // 原始的索引
-  let staticState;        // 静态的索引。即使索引和位置相对于世界坐标不变。
 
   let isRotating = false; // 是否在旋转
   let startCube;          // 焦点立方体 
@@ -28,8 +19,6 @@ class Cube {
   var zLine = new THREE.Vector3( 0, 0, 1 );     // Z轴正方向
   var zLineAd = new THREE.Vector3( 0, 0, -1 );  // Z轴负方向
 
-  const width = window.innerWidth;
-  const height = window.innerHeight;
   const rotateDuration = 500; // 转动的总运动时间
 
   setup();
@@ -38,7 +27,6 @@ class Cube {
   function setup() {
     setupScene();
     setupCamera();
-    // setupAxesHelper();
     setupLights();
     setupRubiks();
     setupCubes();
@@ -62,11 +50,6 @@ class Cube {
     camera.position.set(10, 12, 10);
     camera.lookAt(0, 3, 0);
     camera.updateProjectionMatrix();
-  }
-
-  function setupAxesHelper() {
-    const axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
   }
 
   function setupLights() {
@@ -119,17 +102,6 @@ class Cube {
     window.addEventListener('touchstart', startMouse);
     window.addEventListener('touchmove', moveMouse);
     window.addEventListener('touchend', stopMouse);
-  }
-
-  /**
-   * 设置各个立方体的位置索引
-   */
-  function updateCubeIndex() {
-    // 遍历所有立方体
-    for (let i = 0; i < cubes.lenght; i++) {
-      let cube = cubes[i];
-      
-    }
   }
 
   /**
@@ -260,19 +232,6 @@ class Cube {
       }
     }
     return {intersect: intersect, normalize: normalize};
-  }
-
-  // 获取世界坐标
-  function getWorldPosition(event) {
-    let x = (event.clientX / window.innerWidth) * 2 - 1;
-    let y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    let vector = new THREE.Vector3(x, y, 0.5); // 假设在一定深度创建，确保在摄像机前方
-    vector.unproject(camera);
-    let dir = vector.sub(camera.position).normalize();
-    let distance = -camera.position.z / dir.z; // 根据需要调整，确保物体在摄像机前方可见
-    let pos = camera.position.clone().add(dir.multiplyScalar(distance));
-    return pos;
   }
 
   /**
