@@ -12,7 +12,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
   function setup() {
     setupScene();
     setupCamera();
-    setupAxesHelper();
+    // setupAxesHelper();
     setupLights();
     setupRubiks();
     setupCubes();
@@ -22,7 +22,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
   function setupScene() {
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog( 0x5DB7FF, 10, 100 );
+    scene.background = new THREE.Color(0xFFFFFF);
   }
 
   function setupCamera() {
@@ -34,6 +34,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
     );
     camera.position.set(10, 12, 10);
     camera.lookAt(0, 3, 0);
+    camera.fov = 45
     camera.updateProjectionMatrix();
   }
 
@@ -52,7 +53,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
     let box = new THREE.BoxGeometry(3, 3, 3);
     let mesh = new THREE.MeshBasicMaterial({vertexColors: THREE.FaceColors, opacity: 0, transparent: true});
     rubiks = new THREE.Mesh(box, mesh);
-    // rubiks = new THREE.Mesh(box, materials);
     rubiks.cubeType = 'coverCube';
     scene.add(rubiks);
   }
@@ -67,15 +67,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
   function setupRenderer() {
     renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      logarithmicDepthBuffer: true,
+      antialias: true
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    // 色调映射
-    renderer.toneMapping = THREE.NoToneMapping;//THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
   }
 
