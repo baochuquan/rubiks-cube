@@ -12,7 +12,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
   function setup() {
     setupScene();
     setupCamera();
-    // setupAxesHelper();
+    setupAxesHelper();
     setupLights();
     setupRubiks();
     setupCubes();

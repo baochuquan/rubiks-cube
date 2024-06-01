@@ -255,7 +255,6 @@ class CubePosition {
           intersect = intersects[1];
           normalize = intersects[0].face.normal;
         } else {
-          // 理论上不会进入
           intersect = intersects[0];
           normalize = intersects[1].face.normal;
         }
@@ -264,19 +263,6 @@ class CubePosition {
       }
     }
     return {intersect: intersect, normalize: normalize};
-  }
-
-  // 获取世界坐标
-  function getWorldPosition(event) {
-    let x = (event.clientX / window.innerWidth) * 2 - 1;
-    let y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    let vector = new THREE.Vector3(x, y, 0.5); // 假设在一定深度创建，确保在摄像机前方
-    vector.unproject(camera);
-    let dir = vector.sub(camera.position).normalize();
-    let distance = -camera.position.z / dir.z; // 根据需要调整，确保物体在摄像机前方可见
-    let pos = camera.position.clone().add(dir.multiplyScalar(distance));
-    return pos;
   }
 
   /**

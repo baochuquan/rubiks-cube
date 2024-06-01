@@ -223,7 +223,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
           intersect = intersects[1];
           normalize = intersects[0].face.normal;
         } else {
-          // 理论上不会进入
           intersect = intersects[0];
           normalize = intersects[1].face.normal;
         }
