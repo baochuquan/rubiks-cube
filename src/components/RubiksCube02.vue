@@ -1,6 +1,7 @@
 <script setup>
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import ForkMeOnGitHub from './ForkMeOnGitHub.vue';
 
   let scene, camera, renderer, controller;
   let rubiks;             // 魔方的整体
@@ -446,6 +447,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 <template>
   <div>
+    <ForkMeOnGitHub/>
   </div>
 </template>
 
