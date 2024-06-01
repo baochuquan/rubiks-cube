@@ -37,7 +37,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
   function setupScene() {
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog( 0x5DB7FF, 10, 100 );
+    scene.background = new THREE.Color(0xFFFFFF);
   }
 
   function setupCamera() {

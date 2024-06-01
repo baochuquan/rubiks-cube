@@ -64,7 +64,7 @@ class CubePosition {
 
   function setupScene() {
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog( 0x5DB7FF, 10, 100 );
+    scene.background = new THREE.Color(0xFFFFFF);
   }
 
   function setupCamera() {
@@ -74,7 +74,7 @@ class CubePosition {
       0.1, 
       1000
     );
-    camera.position.set(6, 8, 6);
+    camera.position.set(10, 12, 10);
     camera.lookAt(0, 3, 0);
     camera.updateProjectionMatrix();
   }
